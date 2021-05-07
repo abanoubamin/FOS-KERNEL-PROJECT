@@ -16,11 +16,23 @@
 //============================ REQUIRED FUNCTIONS ==================================//
 //==================================================================================//
 
+struct heap_info
+{
+	uint32 stAddr;
+	uint32 lastAddr;
+};
+struct heap_info info[970000];
+uint32 ind = 0;
+uint32 next = 0;
+uint32 count = (USER_HEAP_MAX - USER_HEAP_START) / PAGE_SIZE;
+uint32 arr[131072];
+uint32 sizee = (USER_HEAP_MAX - USER_HEAP_START) / PAGE_SIZE;
 void* malloc(uint32 size)
 {
 	//TODO: [PROJECT 2018 - MS2 - [4] User Heap] malloc() [User Side]
 	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
+
+	//panic("malloc() is not implemented yet...!!");
 
 	// Steps:
 	//	1) Implement NEXT FIT strategy to search the heap for suitable space
@@ -37,9 +49,76 @@ void* malloc(uint32 size)
 	//Use sys_isUHeapPlacementStrategyNEXTFIT()
 	//to check the current strategy
 
-	return 0;
-}
+	uint32 in1 = 0;
+	uint32 in2 = 0;
+	uint32 newsize = ROUNDUP(size, PAGE_SIZE);
+	uint32 newsize2 = newsize;
+	if ((newsize2 / PAGE_SIZE) > sizee)
+		return NULL;
+	uint32 x = 0;
+	int xd = 0;
+	for (uint32 i = next; i <= count; i++)
+	{
+		if (i == count)
+		{
+			i = 0;
+			x = 0;
+		}
 
+		if (i == next)
+		{
+			xd += 1;
+		}
+
+		if (xd == 2)
+		{
+			return NULL;
+		}
+
+		if (arr[i] == 0)
+		{
+			if (x == 0)
+			{
+				info[ind].stAddr = USER_HEAP_START + (i * PAGE_SIZE);
+				in1 = i;
+			}
+
+			info[ind].lastAddr = USER_HEAP_START + (i * PAGE_SIZE);
+			in2 = i;
+			x += PAGE_SIZE;
+			newsize -= PAGE_SIZE;
+		}
+		else
+		{
+			x = 0;
+		}
+
+		if (x == newsize2)
+		{
+			break;
+		}
+	}
+
+	int ret = sys_isUHeapPlacementStrategyNEXTFIT();
+	if (ret != 1)
+	{
+		panic("Next Fit not working correctly");
+	}
+
+	if (x == newsize2)
+	{
+		sys_allocateMem(info[ind].stAddr, in2 - in1);
+		sizee -= (in2 - in1);
+		for (uint32 i = in1; i <= in2; i++)
+			arr[i] = 1;
+	}
+
+	next = in2 + 1;
+	int tmp = ind;
+	ind++;
+
+	return (void *)(info[tmp].stAddr);
+}
 // free():
 //	This function frees the allocation of the given virtual_address
 //	To do this, we need to switch to the kernel, free the pages AND "EMPTY" PAGE TABLES
@@ -54,13 +133,37 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT 2018 - MS2 - [4] User Heap] free() [User Side]
 	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
 
+	//panic("free() is not implemented yet...!!");
+
+	//cprintf("vir:%x\n",virtual_address);
 	//you shold get the size of the given allocation using its address
 	//you need to call sys_freeMem()
 	//refer to the project presentation and documentation for details
 
+	uint32 ck = 0;
+	uint32 StartAddr;
+	uint32 EndAddr;
+	for (int i = 0; i < ind; i++)
+	{
+		if ((uint32)virtual_address == info[i].stAddr)
+		{
+			uint32 start = ((uint32)virtual_address - USER_HEAP_START) / PAGE_SIZE;
+			uint32 end = (info[i].lastAddr - USER_HEAP_START) / PAGE_SIZE;
+			for (uint32 j = start; j <= end; j++)
+			{
+				arr[j] = 0;
+				sizee++;
+			}
+			sys_freeMem((uint32)virtual_address, info[i].lastAddr);
+			info[i].stAddr = 0;
+			info[i].lastAddr = 0;
+			break;
+		}
+	}
+
 }
+
 
 //==================================================================================//
 //============================== BONUS FUNCTIONS ===================================//

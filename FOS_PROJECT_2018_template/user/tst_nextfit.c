@@ -72,7 +72,8 @@ void _main(void)
 			(uint32)ptr_allocations[25] != 0x83200000 ||
 			(uint32)ptr_allocations[255] != 0x9FE00000)
 		panic("Wrong allocation, Check fitting strategy is working correctly");
-
+	uint32 s=sys_pf_calculate_allocated_pages() - usedDiskPages;
+	uint32 m=512*Mega/PAGE_SIZE;
 	if( (sys_pf_calculate_allocated_pages() - usedDiskPages) !=  512*Mega/PAGE_SIZE) panic("Wrong page file allocation: ");
 	if ((freeFrames - sys_calculate_free_frames()) != (512*Mega)/(1024*PAGE_SIZE) ) panic("Wrong allocation");
 
